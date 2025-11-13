@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <title>رابط الإحالة</title>
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{
+      background:#000;
+      height:100vh;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      font-family:"Cairo",Tahoma,Arial,sans-serif;
+    }
+    #copyBtn{
+      background:#222;
+      color:#fff;
+      border:none;
+      padding:20px 40px;
+      font-size:1.5rem;
+      border-radius:10px;
+      cursor:pointer;
+      box-shadow:0 9px 0 #000, 0 11px 16px rgba(0,0,0,.55);
+      transition:transform .1s, box-shadow .1s;
+      user-select:none;
+    }
+    #copyBtn:active{
+      transform:translateY(5px);
+      box-shadow:0 4px 0 #000, 0 6px 10px rgba(0,0,0,.55);
+    }
+    #toast{
+      position:fixed;
+      bottom:40px;
+      background:#ffffffdd;
+      color:#000;
+      padding:12px 18px;
+      border-radius:8px;
+      font-size:1rem;
+      opacity:0;
+      transform:translateY(15px);
+      transition:opacity .3s, transform .3s;
+      pointer-events:none;
+    }
+    #toast.show{opacity:1;transform:translateY(0);}
+  </style>
+</head>
+<body>
+
+  <button id="copyBtn">إنشاء رابط إحالتي</button>
+  <div id="toast">تم نسخ الرابط!</div>
+
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <script>
+    const btn   = document.getElementById('copyBtn');
+    const toast = document.getElementById('toast');
+
+    const botUsername = window.Telegram?.WebApp?.initDataUnsafe?.bot?.username;
+    const user        = window.Telegram?.WebApp?.initDataUnsafe?.user;
+    const userId      = user?.id;
+    const username    = user?.username;
+    const firstName   = user?.first_name;
+
+    if (!botUsername || !userId) {
+      btn.textContent = "يفتح الرابط فقط من داخل بوت التليغرام";
+      btn.disabled = true;
+    } else {
+      btn.addEventListener('click', async () => {
+        try {
+          const response = await fetch("/api/index", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              user_id: userId,
+              username: username,
+              first_name: firstName,
+              bot_username: botUsername
+            })
+          });
+
+          const data = await response.json();
+
+          if (data.referralLink) {
+            await navigator.clipboard.writeText(data.referralLink);
+            toast.textContent = "✅ تم إنشاء الرابط ونسخه!";
+          } else {
+            toast.textContent = "⚠️ خطأ أثناء إنشاء الرابط";
+          }
+
+        } catch (err) {
+          toast.textContent = "❌ فشل الاتصال بالسيرفر";
+        }
+
+        toast.classList.add('show');
+        setTimeout(() => toast.classList.remove('show'), 1500);
+      });
+    }
+  </script>
+
+</body>
+</html>
